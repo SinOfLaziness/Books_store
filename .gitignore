@@ -36,5 +36,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
-
+# игнорируем все файлы в resources
 src/main/resources/*
+
+# но не игнорируем шаблон настроек
+!src/main/resources/application.properties.example
+src/main/resources/application.properties
