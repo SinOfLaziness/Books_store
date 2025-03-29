@@ -24,9 +24,7 @@ public class CommandHandler {
     @Autowired
     private CartService cartService;
 
-    // Состояние интерактивного ввода для покупки книги
     private Map<Long, PurchaseState> purchaseStates = new ConcurrentHashMap<>();
-    // Состояние интерактивного ввода для добавления книги в корзину
     private Map<Long, AddToCartState> addToCartStates = new ConcurrentHashMap<>();
 
     public String handleCommand(String messageText, String chatIdString) {
@@ -37,6 +35,9 @@ public class CommandHandler {
         } catch (NumberFormatException e) {
             return "Ошибка: неверный chatId.";
         }
+
+        User user = userRepository.findByChatId(chatId);
+        boolean isAdmin = user != null && Boolean.TRUE.equals(user.isAdmin());
 
         if (command.equalsIgnoreCase("/start")) {
             User existingUser = userRepository.findByChatId(chatId);
@@ -52,20 +53,27 @@ public class CommandHandler {
             if (books.isEmpty()) {
                 return "На данный момент книги отсутствуют.";
             }
-            StringBuilder sb = new StringBuilder("Список книг:\n");
+
+            // Сортируем книги по ID
+            books.sort((b1, b2) -> b1.getId().compareTo(b2.getId()));
+
+            StringBuilder sb = new StringBuilder("Список книг:\n\n");
+            int count = 1;
             for (Book book : books) {
-                sb.append(book.getId()).append(": ")
-                        .append(book.getTitle()).append(" — ")
-                        .append(book.getAuthor()).append(" (Цена: ")
-                        .append(book.getPrice()).append("), В наличии: ")
-                        .append(book.getQuantity() == null ? 0 : book.getQuantity())
-                        .append("\n");
+                sb.append(count++).append(") [ID: ").append(book.getId()).append("]\n")
+                        .append("   Название: ").append(book.getTitle()).append("\n")
+                        .append("   Автор: ").append(book.getAuthor()).append("\n")
+                        .append("   Цена: ").append(book.getPrice()).append("\n")
+                        .append("   В наличии: ").append(book.getQuantity() == null ? 0 : book.getQuantity())
+                        .append("\n\n");
             }
             return sb.toString();
         } else if (command.equals("Моя корзина")) {
             return cartService.showCart(chatId);
         } else if (command.equals("Купить корзину")) {
             return cartService.buyCart(chatId);
+        } else if (command.equals("Очистить корзину")) {
+            return cartService.clearCart(chatId);
         } else if (command.equals("Купить книгу")) {
             purchaseStates.remove(chatId);
             purchaseStates.put(chatId, new PurchaseState());
@@ -134,19 +142,60 @@ public class CommandHandler {
                     return "Неверный формат количества. Пожалуйста, отправьте числовое значение.";
                 }
             }
+        } else if (command.startsWith("/addbook ") && isAdmin) {
+            String[] parts = command.split(" ", 5);
+            if (parts.length != 5) {
+                return "Неверный формат. Используйте: /addbook Название Автор Цена Количество";
+            }
+            try {
+                String title = parts[1];
+                String author = parts[2];
+                double price = Double.parseDouble(parts[3]);
+                int quantity = Integer.parseInt(parts[4]);
+                Book book = bookService.addBook(title, author, price, quantity);
+                return book != null ? "Книга добавлена: " + title : "Ошибка.";
+            } catch (Exception e) {
+                return "Ошибка: проверьте формат данных.";
+            }
+        } else if (command.equals("/users") && isAdmin) {
+            List<User> users = userRepository.findAll();
+            StringBuilder sb = new StringBuilder("Список пользователей:\n");
+            for (User u : users) {
+                sb.append(u.getChatId()).append(": ")
+                        .append(u.getUsername())
+                        .append(" (Админ: ").append(u.isAdmin()).append(")\n");
+            }
+            return sb.toString();
+        } else if (command.startsWith("/deletebook ") && isAdmin) {
+            try {
+                Long bookId = Long.parseLong(command.split(" ")[1]);
+                bookService.deleteBook(bookId);
+                return "Книга удалена!";
+            } catch (Exception e) {
+                return "Используйте: /deletebook ID_книги";
+            }
+        } else if (command.startsWith("/makeadmin ") && isAdmin) {
+            try {
+                Long targetChatId = Long.parseLong(command.split(" ")[1]);
+                User targetUser = userRepository.findByChatId(targetChatId);
+                if (targetUser == null) return "Пользователь не найден.";
+                targetUser.setAdmin(true);
+                userRepository.save(targetUser);
+                return "Пользователь " + targetChatId + " стал администратором!";
+            } catch (Exception e) {
+                return "Используйте: /makeadmin CHAT_ID";
+            }
         } else {
             return "Неизвестная команда. Используйте кнопки меню.";
         }
     }
 
-    // Вспомогательный класс для хранения состояния покупки книги
     private static class PurchaseState {
         private Long bookId;
         public Long getBookId() { return bookId; }
         public void setBookId(Long bookId) { this.bookId = bookId; }
     }
 
-    // Вспомогательный класс для хранения состояния добавления книги в корзину
     private static class AddToCartState {
         private Long bookId;
         public Long getBookId() { return bookId; }

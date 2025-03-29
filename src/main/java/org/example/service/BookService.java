@@ -14,29 +14,20 @@ public class BookService {
 
     private final BookRepository bookRepository;
 
-    public BookService(@Autowired(required = false) BookRepository bookRepository) {
+    @Autowired
+    public BookService(BookRepository bookRepository) {
         this.bookRepository = bookRepository;
     }
 
     public List<Book> getAllBooks() {
-        if (bookRepository == null) {
-            return Collections.emptyList();
-        }
         return bookRepository.findAll();
     }
 
     public Book addBook(String title, String author, Double price, Integer quantity) {
-        if (bookRepository == null) {
-            return null;
-        }
         return bookRepository.save(new Book(title, author, price, quantity));
     }
 
-    // Метод покупки книги: уменьшает количество на указанное число, если достаточно
     public boolean purchaseBook(Long bookId, int quantity) {
-        if (bookRepository == null) {
-            return false;
-        }
         Optional<Book> optionalBook = bookRepository.findById(bookId);
         if (optionalBook.isPresent()) {
             Book book = optionalBook.get();
@@ -45,6 +36,14 @@ public class BookService {
                 bookRepository.save(book);
                 return true;
             }
+        }
+        return false;
+    }
+
+    public boolean deleteBook(Long bookId) {
+        if (bookRepository.existsById(bookId)) {
+            bookRepository.deleteById(bookId);
+            return true;
         }
         return false;
     }

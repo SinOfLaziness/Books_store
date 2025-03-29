@@ -27,9 +27,6 @@ public class CartService {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
-    /**
-     * Находит или создаёт корзину в статусе "ACTIVE" для конкретного пользователя.
-     */
     @Transactional
     public Cart findOrCreateActiveCart(User user) {
         Cart cart = cartRepository.findByUserAndStatus(user, "ACTIVE");
@@ -40,27 +37,18 @@ public class CartService {
         return cart;
     }
 
-    /**
-     * Добавляет книгу в корзину, используя chatId для поиска пользователя.
-     */
     @Transactional
     public boolean addBookToCart(Long chatId, Long bookId, int qty) {
-        // Находим пользователя по chatId
         User user = userRepository.findByChatId(chatId);
         if (user == null) {
             return false;
         }
-        // Находим или создаём для него корзину
         Cart cart = findOrCreateActiveCart(user);
-        // Добавляем книгу в корзину (внутренний метод)
         return addBookToCartInternal(cart, bookId, qty);
     }
 
-    /**
-     * Приватный метод для добавления книги в уже найденную корзину.
-     */
     @Transactional
-    private boolean addBookToCartInternal(Cart cart, Long bookId, int qty) {
+    public boolean addBookToCartInternal(Cart cart, Long bookId, int qty) {
         Book book = bookRepository.findById(bookId).orElse(null);
         if (book == null) return false;
         CartItem cartItem = cartItemRepository.findByCart_IdAndBook_Id(cart.getId(), book.getId());
@@ -73,9 +61,6 @@ public class CartService {
         return true;
     }
 
-    /**
-     * Показывает содержимое корзины пользователя по chatId.
-     */
     @Transactional
     public String showCart(Long chatId) {
         User user = userRepository.findByChatId(chatId);
@@ -95,9 +80,6 @@ public class CartService {
         return sb.toString();
     }
 
-    /**
-     * Оформление покупки корзины: перенос товаров в заказ, уменьшение количества книг и завершение корзины.
-     */
     @Transactional
     public String buyCart(Long chatId) {
         User user = userRepository.findByChatId(chatId);
@@ -125,5 +107,18 @@ public class CartService {
         cart.setStatus("COMPLETED");
         cartRepository.save(cart);
         return "Спасибо за покупку! Общая сумма: " + total;
+    }
+
+    @Transactional
+    public String clearCart(Long chatId) {
+        User user = userRepository.findByChatId(chatId);
+        if (user == null) return "Пользователь не найден.";
+        Cart cart = cartRepository.findByUserAndStatus(user, "ACTIVE");
+        if (cart == null || cart.getItems().isEmpty()) return "Корзина уже пуста.";
+
+        // Достаточно очистить коллекцию, orphanRemoval удалит CartItem из базы
+        cart.getItems().clear();
+        cartRepository.save(cart);
+        return "Корзина очищена.";
     }
 }
