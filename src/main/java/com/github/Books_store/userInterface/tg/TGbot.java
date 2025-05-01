@@ -3,6 +3,7 @@ package com.github.Books_store.userInterface.tg;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import static com.github.Books_store.hiddenConstants.BOT_TOKEN;
 
 import java.sql.SQLException;
 
@@ -21,7 +22,7 @@ public class tgBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        return "7910001494:AAEtJ0X5fiJ4lZfqZACWN1slCKa79T60_sA";
+        return BOT_TOKEN;
     }
 
     @Override
