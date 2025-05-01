@@ -1,17 +1,17 @@
-package com.github.Books_store.AccessLayer;
+package com.github.Books_store.accessLayer;
 
 import java.sql.*;
 
 // Инициализация базы данных
 
-public class DatabaseInitializer extends Configs {
+public class databaseInitializer extends configs {
     private Connection dbConnection;
-    private DatabaseTools databaseTools;
+    private com.github.Books_store.accessLayer.databaseTools databaseTools;
 
-    public DatabaseInitializer() {
+    public databaseInitializer() {
         try {
             dbConnection = getDbConnection();
-            databaseTools = new DatabaseTools(dbConnection);
+            databaseTools = new databaseTools(dbConnection);
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
@@ -24,7 +24,7 @@ public class DatabaseInitializer extends Configs {
         return dbConnection;
     }
 
-    public DatabaseTools getDatabaseTools() {
+    public com.github.Books_store.accessLayer.databaseTools getDatabaseTools() {
         return databaseTools;
     }
 

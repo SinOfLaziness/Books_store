@@ -1,4 +1,4 @@
-package com.github.Books_store.UserInterface.TG;
+package com.github.Books_store.userInterface.tg;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -8,11 +8,11 @@ import java.sql.SQLException;
 
 // Запуск телеграм бота
 
-public class TGbot extends TelegramLongPollingBot {
-    private final TGUpdateHandler TGupdateHandler;
+public class tgBot extends TelegramLongPollingBot {
+    private final tgUpdateHandler TGupdateHandler;
 
-    public TGbot() {
-        this.TGupdateHandler = new TGUpdateHandler(this);
+    public tgBot() {
+        this.TGupdateHandler = new tgUpdateHandler(this);
     }
     @Override
     public String getBotUsername() {
@@ -21,7 +21,7 @@ public class TGbot extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        return "7910001494:AAHPYxFKYFU_0_h1shYWJFExliCk0Yuxz00";
+        return "7910001494:AAEtJ0X5fiJ4lZfqZACWN1slCKa79T60_sA";
     }
 
     @Override

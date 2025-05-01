@@ -1,8 +1,8 @@
-package com.github.Books_store.UserInterface.TG;
+package com.github.Books_store.userInterface.tg;
 
-import static com.github.Books_store.UserInterface.TemplatesMessage.*;
+import static com.github.Books_store.userInterface.templatesMessage.*;
 
-import com.github.Books_store.UserInterface.TG.TGResponse;
+import com.github.Books_store.model.response;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -14,12 +14,12 @@ import java.sql.SQLException;
 // Функции, вызываемые при обработке, хранятся в TGResponse
 // Вызываются они через response.
 
-public class TGUpdateHandler{
+public class tgUpdateHandler {
 
-    private final TGResponse response;
+    private final response Response;
 
-    public TGUpdateHandler(TGbot telegramBot) {
-        response = new TGResponse(telegramBot);
+    public tgUpdateHandler(tgBot telegramBot) {
+        Response = new response(telegramBot);
     }
 
     public void handleUpdate(Update update) throws TelegramApiException, SQLException {
@@ -35,9 +35,9 @@ public class TGUpdateHandler{
         Long chatId = update.getMessage().getChatId();
 
         switch (text.toLowerCase()) {
-            case "/start" ->    response.startCommand(chatId);
-            case "/help" ->     response.SendMessage(chatId, HELP);
-            default ->          response.SendMessage(chatId, UNKNOWN);
+            case "/start" ->    Response.startCommand(chatId, TG);
+            case "/help" ->     Response.help(chatId, TG);
+            default ->          Response.unknown(chatId, TG);
         }
     }
 
@@ -47,10 +47,10 @@ public class TGUpdateHandler{
         Long chatId = callbackQuery.getMessage().getChatId();
 
         switch (data) {
-            case "option1" ->       response.option1Callback(chatId);
-            case "option2" ->       response.option2Callback(chatId);
-            case "signUpUser" ->    response.signUpUser(chatId);
-            default ->              response.SendMessage(chatId, UNKNOWN);
+            case "option1" ->       Response.option1Callback(chatId, TG);
+            case "option2" ->       Response.option2Callback(chatId, TG);
+            case "signUpUser" ->    Response.signUpUser(chatId, TG);
+            default ->              Response.unknown(chatId, TG);
         }
     }
 }

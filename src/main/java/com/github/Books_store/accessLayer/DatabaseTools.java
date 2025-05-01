@@ -1,4 +1,4 @@
-package com.github.Books_store.AccessLayer;
+package com.github.Books_store.accessLayer;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -7,10 +7,10 @@ import java.sql.SQLException;
 
 // Функционал базы данных
 
-public class DatabaseTools {
+public class databaseTools {
     private final Connection dbConnection;
 
-    public DatabaseTools(Connection dbConnection) {
+    public databaseTools(Connection dbConnection) {
         this.dbConnection = dbConnection;
     }
 
@@ -26,7 +26,7 @@ public class DatabaseTools {
 
     private ResultSet getUserCount(Long chatID) {
         ResultSet resultSet = null;
-        String insert = "SELECT COUNT(*) FROM " + ConstantDB.USERS_TABLE + " WHERE " + ConstantDB.TG_ID + "=?";
+        String insert = "SELECT COUNT(*) FROM " + constantDB.USERS_TABLE + " WHERE " + constantDB.TG_ID + "=?";
         try {
             PreparedStatement prSt = dbConnection.prepareStatement(insert);
             prSt.setLong(1, chatID);
@@ -39,7 +39,7 @@ public class DatabaseTools {
 
     public void signUpUser(Long telegramID) {
         String insert = String.format("INSERT INTO %s(%s) VALUES (?)",
-                ConstantDB.USERS_TABLE, ConstantDB.TG_ID);
+                constantDB.USERS_TABLE, constantDB.TG_ID);
         try (PreparedStatement prSt = dbConnection.prepareStatement(insert)) {
             prSt.setLong(1, telegramID);
             prSt.executeUpdate();
