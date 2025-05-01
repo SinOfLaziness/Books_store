@@ -37,4 +37,4 @@ build/
 ### Mac OS ###
 .DS_Store
 
-src/main/java/com.github.Books_store/hiddenConstants.java
+src/main/java/com/github/Books_store/hiddenConstants.java
