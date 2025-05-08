@@ -37,11 +37,11 @@ public class tgUpdateHandler {
         switch (text.toLowerCase()) {
             case "/start" ->    Response.startCommand(chatId, TG);
             case "/help" ->     Response.help(chatId, TG);
-            default ->          Response.unknown(chatId, TG);
+            default ->          Response.unknown(chatId, text, TG);
         }
     }
 
-    private void handleCallbackQuery(Update update) throws TelegramApiException {
+    private void handleCallbackQuery(Update update) throws TelegramApiException, SQLException {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         String data = callbackQuery.getData();
         Long chatId = callbackQuery.getMessage().getChatId();
@@ -49,8 +49,9 @@ public class tgUpdateHandler {
         switch (data) {
             case "option1" ->       Response.option1Callback(chatId, TG);
             case "option2" ->       Response.option2Callback(chatId, TG);
-            case "signUpUser" ->    Response.signUpUser(chatId, TG);
-            default ->              Response.unknown(chatId, TG);
+            case "requestLogin" ->  Response.requestLogin(chatId, TG);
+            case "unlogging" ->     Response.unlogging(chatId, TG);
+            default ->              Response.unknown(chatId, data, TG);
         }
     }
 }

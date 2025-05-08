@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 // Функционал базы данных
 
@@ -37,14 +38,33 @@ public class databaseTools {
         return resultSet;
     }
 
-    public void signUpUser(Long telegramID) {
-        String insert = String.format("INSERT INTO %s(%s) VALUES (?)",
-                constantDB.USERS_TABLE, constantDB.TG_ID);
+    public void signUpUser(Long chatId, ArrayList<String> authorisationData, String socNet) {
+        String insert = String.format("INSERT INTO %s (%s,%s,%s) VALUES (?,?,?)",
+                constantDB.USERS_TABLE,
+                constantDB.TG_ID,
+                constantDB.LOGIN,
+                constantDB.PASSWORD);
         try (PreparedStatement prSt = dbConnection.prepareStatement(insert)) {
-            prSt.setLong(1, telegramID);
+            prSt.setString(1, chatId.toString());
+            prSt.setString(2, authorisationData.get(0));
+            prSt.setString(3, authorisationData.get(1));
+
             prSt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-}
+
+    public void unlogging(Long chatId, String socNet) {
+        String insert = String.format("DELETE FROM %s WHERE %s = ?",
+                constantDB.USERS_TABLE,
+                constantDB.TG_ID);
+        try (PreparedStatement prSt = dbConnection.prepareStatement(insert)) {
+            prSt.setLong(1, chatId);
+            prSt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    }
