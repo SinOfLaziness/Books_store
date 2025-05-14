@@ -3,26 +3,23 @@ package com.github.Books_store.userInterface.tg;
 import static com.github.Books_store.userInterface.templatesMessage.*;
 
 import com.github.Books_store.model.response;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import java.sql.SQLException;
 
-// Здесь происходит обработка взаимодействия пользователя с ботом
-// HandleTextMessage обрабатывает текстовые сообщения,
-// HandleCallbackQuery обрабатывает нажатия на кнопки
-// Функции, вызываемые при обработке, хранятся в TGResponse
-// Вызываются они через response.
-
+@Component
 public class tgUpdateHandler {
 
-    private final response Response;
+    private final response response;
 
-    public tgUpdateHandler(tgBot telegramBot) {
-        Response = new response(telegramBot);
+    // Внедряем response через конструктор (через Spring)
+    @Autowired
+    public tgUpdateHandler(response response) {
+        this.response = response;
     }
 
-    public void handleUpdate(Update update) throws TelegramApiException, SQLException {
+    public void handleUpdate(Update update) throws Exception {
         if (update.hasMessage()) {
             handleTextMessage(update);
         } else if (update.hasCallbackQuery()) {
@@ -30,28 +27,28 @@ public class tgUpdateHandler {
         }
     }
 
-    private void handleTextMessage(Update update) throws TelegramApiException, SQLException {
+    private void handleTextMessage(Update update) throws Exception {
         String text = update.getMessage().getText();
         Long chatId = update.getMessage().getChatId();
 
         switch (text.toLowerCase()) {
-            case "/start" ->    Response.startCommand(chatId, TG);
-            case "/help" ->     Response.help(chatId, TG);
-            default ->          Response.unknown(chatId, text, TG);
+            case "/start" -> response.startCommand(chatId, TG);
+            case "/help"  -> response.help(chatId, TG);
+            default      -> response.unknown(chatId, text, TG);
         }
     }
 
-    private void handleCallbackQuery(Update update) throws TelegramApiException, SQLException {
-        CallbackQuery callbackQuery = update.getCallbackQuery();
-        String data = callbackQuery.getData();
-        Long chatId = callbackQuery.getMessage().getChatId();
+    private void handleCallbackQuery(Update update) throws Exception {
+        CallbackQuery cq = update.getCallbackQuery();
+        String data = cq.getData();
+        Long chatId = cq.getMessage().getChatId();
 
         switch (data) {
-            case "option1" ->       Response.option1Callback(chatId, TG);
-            case "option2" ->       Response.option2Callback(chatId, TG);
-            case "requestLogin" ->  Response.requestLogin(chatId, TG);
-            case "unlogging" ->     Response.unlogging(chatId, TG);
-            default ->              Response.unknown(chatId, data, TG);
+            case "option1"        -> response.option1Callback(chatId, TG);
+            case "option2"        -> response.option2Callback(chatId, TG);
+            case "requestLogin"   -> response.requestLogin(chatId, TG);
+            case "unlogging"      -> response.unlogging(chatId, TG);
+            default               -> response.unknown(chatId, data, TG);
         }
     }
 }

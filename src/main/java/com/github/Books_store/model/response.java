@@ -1,115 +1,343 @@
 package com.github.Books_store.model;
 
 import com.github.Books_store.accessLayer.databaseInitializer;
+import com.github.Books_store.accessLayer.databaseTools;
+import com.github.Books_store.model.entities.Book;
+import com.github.Books_store.model.entities.CartItem;
+import com.github.Books_store.model.entities.Purchase;
 import com.github.Books_store.userInterface.tg.tgBot;
-import com.github.Books_store.userInterface.tg.tgKeyboards;
 import com.github.Books_store.userInterface.tg.tgTools;
+import com.github.Books_store.userInterface.tg.tgKeyboards;
+import com.github.Books_store.userInterface.vk.vkBot;
+import com.github.Books_store.userInterface.vk.vkKeyboards;
+import com.github.Books_store.userInterface.vk.vkTools;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import static com.github.Books_store.userInterface.templatesMessage.*;
 
+@Component
 public class response {
+
     private final tgTools TGTools;
+    private final vkTools VKTools;
     private final tgKeyboards TGKeyboards;
-    private final databaseInitializer dbHandler;
-    private final HashMap<Long, String> statusTable;
-    private final HashMap<Long, ArrayList<String>> authorisationTable;
+    private final vkKeyboards VKKeyboards;
+    private final databaseTools dbTools;
+    private final HashMap<Long, String> statusTable ;
+    private final HashMap<Long, ArrayList<String>> authTable;
 
-    public response(tgBot telegramBot) {
+    @Autowired
+    public response(tgBot telegramBot, @Lazy vkBot vkBot) {
         this.TGTools = new tgTools(telegramBot);
+        this.VKTools = new vkTools();
         this.TGKeyboards = new tgKeyboards();
-        this.dbHandler = new databaseInitializer();
-        this.statusTable = new HashMap<Long, String>();
-        this.authorisationTable = new HashMap<Long, ArrayList<String>>();
-    }
-
-    public void sendMessageWithKeyboard(Long chatId,
-                            String message, String socNet, InlineKeyboardMarkup keyboardMarkup)
-                            throws TelegramApiException {
-        if (socNet.equals(TG))
-            TGTools.sendMessageWithKeyboard(chatId, message, keyboardMarkup);
-    }
-
-    public void sendMessage(Long chatId, String message, String socNet)
-                            throws TelegramApiException {
-        if (socNet.equals(TG))
-            TGTools.sendMessage(chatId, message);
-    }
-
-    public void startCommand(Long chatId, String socNet) throws SQLException, TelegramApiException {
-        if (dbHandler.getDatabaseTools().checkIfSigned(chatId)){
-            sendMessageWithKeyboard(chatId, HELLO, socNet, TGKeyboards.createStartKeyboard());
+        this.VKKeyboards = new vkKeyboards();
+        try {
+            this.dbTools = new databaseTools(new databaseInitializer().getDbConnection());
+        } catch (ClassNotFoundException | SQLException e) {
+            throw new RuntimeException("Ошибка инициализации базы данных", e);
         }
-        else{
-            sendMessageWithKeyboard(chatId, SIGN_PLEASE, socNet, TGKeyboards.createSignKeyboard());
+        this.statusTable = new HashMap<>();
+        this.authTable = new HashMap<>();
+    }
+
+    // Метод для получения логина по userId
+    public String getLogin(Long userId, String socNet) throws SQLException {
+        return dbTools.getLoginByUserId(userId, socNet);
+    }
+
+    private boolean isTG(String socNet) { return TG.equals(socNet); }
+    private boolean isVK(String socNet) { return VK.equals(socNet); }
+
+    public void sendMsg(Long userId, String text, String socNet) throws Exception {
+        if (isTG(socNet)) TGTools.sendMessage(userId, text);
+        else if (isVK(socNet)) VKTools.sendMessage(userId, text);
+    }
+
+    public void requestLogin(Long userId, String socNet) throws Exception {
+        sendMsg(userId, "Пожалуйста, введите логин:", socNet);
+        setStatus(userId, "login");
+    }
+
+    public void option1Callback(Long userId, String socNet) throws Exception {
+        sendMsg(userId, "Вы выбрали первый вариант!", socNet);
+        boolean signed = dbTools.checkIfSigned(userId, socNet);
+        sendKeyboard(userId, signed ? HELLO : SIGN_PLEASE, socNet, signed);
+    }
+
+    public void option2Callback(Long userId, String socNet) throws Exception {
+        sendMsg(userId, "Вы выбрали второй вариант!", socNet);
+        boolean signed = dbTools.checkIfSigned(userId, socNet);
+        sendKeyboard(userId, signed ? HELLO : SIGN_PLEASE, socNet, signed);
+    }
+
+    private void sendKeyboard(Long userId, String text, String socNet, boolean signed) throws Exception {
+        if (isTG(socNet)) {
+            InlineKeyboardMarkup kb = signed
+                    ? TGKeyboards.createStartKeyboard()
+                    : TGKeyboards.createSignKeyboard();
+            TGTools.sendMessageWithKeyboard(userId, text, kb);
+        } else if (isVK(socNet)) {
+            String kbJson = signed
+                    ? VKKeyboards.createStartKeyboardJson()
+                    : VKKeyboards.createSignKeyboardJson();
+            String uniqueText = text + "\u200B";
+            VKTools.sendMessageWithKeyboard(userId, uniqueText, kbJson);
         }
     }
 
-//    public void signUpUser(Long chatId, String socNet) throws TelegramApiException {
-//        dbHandler.getDatabaseTools().signUpUser(chatId);
-//        sendMessage(chatId, SUCCESSFUL_SIGN, socNet);
-//    }
-
-    public void requestLogin(Long chatId, String socNet) throws TelegramApiException {
-        sendMessage(chatId, NOTICE_ON_REGISTRATION, socNet);
-        sendMessage(chatId, REQUEST_LOGIN, socNet);
-        this.statusTable.put(chatId, "inputLogin");
+    // Отправка специальной клавиатуры для списка книг
+    private void sendBookListKeyboard(Long userId, String text, String socNet) throws Exception {
+        if (isVK(socNet)) {
+            String kbJson = VKKeyboards.createBookListKeyboardJson();
+            VKTools.sendMessageWithKeyboard(userId, text + "\u200B", kbJson);
+        } else if (isTG(socNet)) {
+            // Аналогично для TG — добавьте при необходимости
+        }
     }
 
-    public void requestPassword(Long chatId, String socNet) throws TelegramApiException {
-        sendMessage(chatId, REQUEST_PASSWORD, socNet);
-        this.statusTable.put(chatId, "inputPassword");
+    // Отправка клавиатуры корзины
+    private void sendCartKeyboard(Long userId, String text, String socNet) throws Exception {
+        if (isVK(socNet)) {
+            String kbJson = VKKeyboards.createCartKeyboardJson();
+            VKTools.sendMessageWithKeyboard(userId, text + "\u200B", kbJson);
+        } else if (isTG(socNet)) {
+            // Аналогично для TG
+        }
     }
 
-    public void signUpUser(Long chatId, String socNet) throws SQLException, TelegramApiException {
-        this.dbHandler.getDatabaseTools().signUpUser(chatId, this.authorisationTable.get(chatId), socNet);
-        if (this.dbHandler.getDatabaseTools().checkIfSigned(chatId))
-            sendMessage(chatId, SUCCESSFUL_SIGN, socNet);
-        this.statusTable.remove(chatId);
-        this.authorisationTable.remove(chatId);
+    public void startCommand(Long userId, String socNet) throws Exception {
+        boolean signed = dbTools.checkIfSigned(userId, socNet);
+        sendKeyboard(userId, signed ? HELLO : SIGN_PLEASE, socNet, signed);
     }
 
-    public void unlogging(Long chatId, String socNet) throws SQLException, TelegramApiException {
-        this.dbHandler.getDatabaseTools().unlogging(chatId, socNet);
-        if (!this.dbHandler.getDatabaseTools().checkIfSigned(chatId))
-            sendMessage(chatId, SUCCESSFUL_EXIT, socNet);
+
+    public void listBooks(Long userId, String socNet) throws Exception {
+        String login = getLogin(userId, socNet);
+        if (login == null) {
+            sendMsg(userId, "Сначала зарегистрируйтесь, пожалуйста.", socNet);
+            return;
+        }
+
+        List<Book> books = dbTools.getBooksList();
+        if (books.isEmpty()) {
+            sendMsg(userId, "Книги отсутствуют.", socNet);
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder("Список книг:\n");
+        for (Book book : books) {
+            sb.append(String.format("%d. %s (В наличии: %d)\n", book.getId(), book.getTitle(), book.getStock()));
+        }
+        sendBookListKeyboard(userId, sb.toString(), socNet);
+        statusTable.put(userId, "main_menu");
     }
 
-    public void help(Long chatId, String socNet) throws TelegramApiException {
-        sendMessage(chatId, HELP, socNet);
+    public void showPurchases(Long userId, String socNet) throws Exception {
+        String login = getLogin(userId, socNet);
+        if (login == null) {
+            sendMsg(userId, "Сначала зарегистрируйтесь, пожалуйста.", socNet);
+            return;
+        }
+
+        List<Purchase> purchases = dbTools.getUserPurchases(login);
+        if (purchases.isEmpty()) {
+            sendMsg(userId, "Покупок пока нет.", socNet);
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder("Ваши покупки:\n");
+        for (Purchase purchase : purchases) {
+            sb.append(String.format("%s — количество: %d (дата: %s)\n",
+                    purchase.getBookTitle(), purchase.getQuantity(), purchase.getPurchaseDate().toString()));
+        }
+        sendMsg(userId, sb.toString(), socNet);
     }
 
-    public void unknown(Long chatId, String text, String socNet) throws TelegramApiException, SQLException {
-        if (this.statusTable.containsKey(chatId)){
-            String status = this.statusTable.get(chatId);
-            if (status.equals("inputLogin")){
-                ArrayList<String> authorisationData = new ArrayList<String>();
-                authorisationData.add(text);
-                this.authorisationTable.put(chatId, authorisationData);
-                requestPassword(chatId, socNet);
+    public void addToCartFlow(Long userId, String socNet, String input) throws Exception {
+        String state = getStatus(userId);
+        ArrayList<String> temp = authTable.getOrDefault(userId, new ArrayList<>());
+
+        if ("awaiting_book_id".equals(state)) {
+            temp.clear();
+            temp.add(input);
+            authTable.put(userId, temp);
+            sendMsg(userId, "Введите количество:", socNet);
+            setStatus(userId, "awaiting_quantity");
+
+        } else if ("awaiting_quantity".equals(state)) {
+            if (temp.isEmpty()) {
+                sendMsg(userId, "Ошибка. Сначала введите ID книги.", socNet);
+                setStatus(userId, "awaiting_book_id");
+                return;
             }
-            else if (status.equals("inputPassword")){
-                this.authorisationTable.get(chatId).add(text);
-                System.out.println(this.authorisationTable.get(chatId));
-                signUpUser(chatId, socNet);
+            String bookIdStr = temp.get(0);
+            String quantityStr = input.trim();
+
+            try {
+                int bookId = Integer.parseInt(bookIdStr);
+                int quantity = Integer.parseInt(quantityStr);
+                boolean success = dbTools.addToCart(getLogin(userId, socNet), bookId, quantity);
+                if (success) {
+                    sendMsg(userId, "Книга добавлена в корзину!", socNet);
+                } else {
+                    sendMsg(userId, "Ошибка: недостаточно книг на складе или неверные данные.", socNet);
+                }
+            } catch (NumberFormatException e) {
+                sendMsg(userId, "Неверный формат ID или количества.", socNet);
             }
+
+            authTable.remove(userId);
+            setStatus(userId, "main_menu");
+            sendKeyboard(userId, HELLO, socNet, true);
+
+        } else {
+            sendMsg(userId, "Пожалуйста, используйте меню для взаимодействия.", socNet);
         }
-        else
-            sendMessage(chatId, UNKNOWN, socNet);
     }
 
+    public void showCart(Long userId, String socNet) throws Exception {
+        String login = getLogin(userId, socNet);
+        if (login == null) {
+            sendMsg(userId, "Сначала зарегистрируйтесь, пожалуйста.", socNet);
+            return;
+        }
 
-    public void option1Callback(Long chatId, String socNet) throws TelegramApiException {
-        sendMessage(chatId, "Вы выбрали первый вариант!", socNet);
+        List<CartItem> cartItems = dbTools.getUserCart(login);
+        if (cartItems.isEmpty()) {
+            sendMsg(userId, "Ваша корзина пуста.", socNet);
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder("Ваша корзина:\n");
+        for (CartItem item : cartItems) {
+            sb.append(String.format("%s — количество: %d\n", item.getBookTitle(), item.getQuantity()));
+        }
+        sendCartKeyboard(userId, sb.toString(), socNet);
+        statusTable.put(userId, "cart_menu");
     }
 
-    public void option2Callback(Long chatId, String socNet) throws TelegramApiException {
-        sendMessage(chatId, "Вы выбрали второй вариант!", socNet);
+    public void purchaseCart(Long userId, String socNet) throws Exception {
+        String login = getLogin(userId, socNet);
+        if (login == null) {
+            sendMsg(userId, "Сначала зарегистрируйтесь, пожалуйста.", socNet);
+            return;
+        }
+
+        boolean success = dbTools.purchaseCart(login);
+        if (success) {
+            sendMsg(userId, "Покупка корзины успешно оформлена!", socNet);
+        } else {
+            sendMsg(userId, "Не удалось оформить покупку. Корзина может быть пуста или возникла ошибка.", socNet);
+        }
+        sendKeyboard(userId, HELLO, socNet, true);
+        statusTable.put(userId, "main_menu");
+    }
+
+    public void clearCart(Long userId, String socNet) throws Exception {
+        String login = getLogin(userId, socNet);
+        if (login == null) {
+            sendMsg(userId, "Сначала зарегистрируйтесь, пожалуйста.", socNet);
+            return;
+        }
+
+        boolean success = dbTools.clearCart(login);
+        if (success) {
+            sendMsg(userId, "Корзина очищена.", socNet);
+        } else {
+            sendMsg(userId, "Не удалось очистить корзину.", socNet);
+        }
+        sendKeyboard(userId, HELLO, socNet, true);
+        statusTable.put(userId, "main_menu");
+    }
+
+    public void handleUnknown(Long userId, String text, String socNet) throws Exception {
+        String state = statusTable.get(userId);
+        if ("awaiting_book_id".equals(state) || "awaiting_quantity".equals(state)) {
+            addToCartFlow(userId, socNet, text);
+        } else {
+            sendMsg(userId, UNKNOWN, socNet);
+        }
+    }
+
+    public void unknown(Long userId, String text, String socNet) throws Exception {
+        sendMsg(userId, "Не понял вас. Попробуйте ещё раз.", socNet);
+    }
+
+    // Метод buyBook (если вы раньше называли по-другому, приведите к одному имени)
+    public void buyBook(Long userId, String socNet, int bookId) throws Exception {
+        String login = getLogin(userId, socNet);
+        if (login == null) {
+            sendMsg(userId, "Сначала зарегистрируйтесь, пожалуйста.", socNet);
+            return;
+        }
+        boolean success = dbTools.buyBook(login, bookId);
+        if (success) {
+            sendMsg(userId, "Покупка успешно оформлена!", socNet);
+        } else {
+            sendMsg(userId, "Покупка не удалась: возможно, книга закончилась или неверный ID.", socNet);
+        }
+    }
+
+    // Метод unlogging
+    public void unlogging(Long userId, String socNet) throws Exception {
+        dbTools.unlogging(userId, socNet);
+        sendMsg(userId, "Вы успешно вышли из аккаунта.", socNet);
+        sendKeyboard(userId, SIGN_PLEASE, socNet, false);
+    }
+
+    // Метод help
+    public void help(Long userId, String socNet) throws Exception {
+        sendMsg(userId, "Помощь: используйте команды или кнопки.", socNet);
+    }
+
+    public void setStatus(Long userId, String status) {
+        statusTable.put(userId, status);
+    }
+    public String getStatus(Long userId) {
+        return statusTable.get(userId);
+    }
+
+    public void processLoginInput(Long userId, String socNet, String input) throws Exception {
+        // Сохраняете временно логин
+        ArrayList<String> temp = authTable.getOrDefault(userId, new ArrayList<>());
+        temp.clear();
+        temp.add(input); // логин
+        authTable.put(userId, temp);
+
+        sendMsg(userId, "Пожалуйста, введите пароль:", socNet);
+        setStatus(userId, "password");
+    }
+
+    public void processPasswordInput(Long userId, String socNet, String input) throws Exception {
+        ArrayList<String> temp = authTable.get(userId);
+        if (temp == null || temp.isEmpty()) {
+            sendMsg(userId, "Ошибка. Сначала введите логин.", socNet);
+            setStatus(userId, "login");
+            return;
+        }
+        String login = temp.get(0);
+        String password = input;
+
+        try {
+            dbTools.signUpUser(userId, login, password, socNet);
+            sendMsg(userId, "Вы успешно зарегистрированы!", socNet);
+            setStatus(userId, "main_menu");
+            authTable.remove(userId);
+            sendKeyboard(userId, HELLO, socNet, true);
+        } catch (Exception e) {
+            sendMsg(userId, "Ошибка при регистрации. Попробуйте ещё раз.", socNet);
+            setStatus(userId, "login");
+            authTable.remove(userId);
+        }
     }
 
 }

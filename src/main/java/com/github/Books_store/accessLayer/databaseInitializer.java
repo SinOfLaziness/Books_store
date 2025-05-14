@@ -17,7 +17,7 @@ public class databaseInitializer extends configs {
         }
     }
 
-    private Connection getDbConnection() throws ClassNotFoundException, SQLException {
+    public Connection getDbConnection() throws ClassNotFoundException, SQLException {
         String connectionString = String.format("jdbc:mysql://%s:%s/%s", dbHost, dbPort, dbName);
         Class.forName("com.mysql.cj.jdbc.Driver");
         dbConnection = DriverManager.getConnection(connectionString, dbUser, dbPass);
