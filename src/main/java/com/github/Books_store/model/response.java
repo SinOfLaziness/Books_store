@@ -35,7 +35,7 @@ public class response {
     private final HashMap<Long, ArrayList<String>> authTable;
 
     @Autowired
-    public response(tgBot telegramBot, @Lazy vkBot vkBot) {
+    public response(@Lazy tgBot telegramBot, @Lazy vkBot vkBot) {
         this.TGTools = new tgTools(telegramBot);
         this.VKTools = new vkTools();
         this.TGKeyboards = new tgKeyboards();

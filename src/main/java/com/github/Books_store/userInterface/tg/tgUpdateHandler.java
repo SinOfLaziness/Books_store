@@ -12,15 +12,18 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class tgUpdateHandler {
 
     private final response response;
+    private static final String TG = "tg";
 
-    // Внедряем response через конструктор (через Spring)
     @Autowired
     public tgUpdateHandler(response response) {
         this.response = response;
     }
 
+    /**
+     * Основной метод обработки апдейтов бота
+     */
     public void handleUpdate(Update update) throws Exception {
-        if (update.hasMessage()) {
+        if (update.hasMessage() && update.getMessage().hasText()) {
             handleTextMessage(update);
         } else if (update.hasCallbackQuery()) {
             handleCallbackQuery(update);
@@ -31,10 +34,21 @@ public class tgUpdateHandler {
         String text = update.getMessage().getText();
         Long chatId = update.getMessage().getChatId();
 
+        // Обработка состояний регистрации
+        String status = response.getStatus(chatId);
+        if ("login".equals(status)) {
+            response.processLoginInput(chatId, TG, text);
+            return;
+        } else if ("password".equals(status)) {
+            response.processPasswordInput(chatId, TG, text);
+            return;
+        }
+
+        // Обычные команды
         switch (text.toLowerCase()) {
             case "/start" -> response.startCommand(chatId, TG);
             case "/help"  -> response.help(chatId, TG);
-            default      -> response.unknown(chatId, text, TG);
+            default        -> response.unknown(chatId, text, TG);
         }
     }
 
@@ -44,11 +58,11 @@ public class tgUpdateHandler {
         Long chatId = cq.getMessage().getChatId();
 
         switch (data) {
-            case "option1"        -> response.option1Callback(chatId, TG);
-            case "option2"        -> response.option2Callback(chatId, TG);
-            case "requestLogin"   -> response.requestLogin(chatId, TG);
-            case "unlogging"      -> response.unlogging(chatId, TG);
-            default               -> response.unknown(chatId, data, TG);
+            case "option1"      -> response.option1Callback(chatId, TG);
+            case "option2"      -> response.option2Callback(chatId, TG);
+            case "requestLogin" -> response.requestLogin(chatId, TG);
+            case "unlogging"    -> response.unlogging(chatId, TG);
+            default              -> response.unknown(chatId, data, TG);
         }
     }
 }
