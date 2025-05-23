@@ -100,7 +100,8 @@ public class response {
             String kbJson = VKKeyboards.createBookListKeyboardJson();
             VKTools.sendMessageWithKeyboard(userId, text + "\u200B", kbJson);
         } else if (isTG(socNet)) {
-            // Аналогично для TG — добавьте при необходимости
+            InlineKeyboardMarkup kb = TGKeyboards.createBookListKeyboard();
+            TGTools.sendMessageWithKeyboard(userId, text, kb);
         }
     }
 
@@ -110,7 +111,8 @@ public class response {
             String kbJson = VKKeyboards.createCartKeyboardJson();
             VKTools.sendMessageWithKeyboard(userId, text + "\u200B", kbJson);
         } else if (isTG(socNet)) {
-            // Аналогично для TG
+            InlineKeyboardMarkup kb = TGKeyboards.createCartKeyboard();
+            TGTools.sendMessageWithKeyboard(userId, text, kb);
         }
     }
 

@@ -31,24 +31,37 @@ public class tgUpdateHandler {
     }
 
     private void handleTextMessage(Update update) throws Exception {
-        String text = update.getMessage().getText();
+        String data = update.getMessage().getText().toLowerCase();
         Long chatId = update.getMessage().getChatId();
 
         // Обработка состояний регистрации
         String status = response.getStatus(chatId);
         if ("login".equals(status)) {
-            response.processLoginInput(chatId, TG, text);
+            response.processLoginInput(chatId, TG, data);
             return;
         } else if ("password".equals(status)) {
-            response.processPasswordInput(chatId, TG, text);
+            response.processPasswordInput(chatId, TG, data);
             return;
         }
 
         // Обычные команды
-        switch (text.toLowerCase()) {
+        switch (data) {
             case "/start" -> response.startCommand(chatId, TG);
             case "/help"  -> response.help(chatId, TG);
-            default        -> response.unknown(chatId, text, TG);
+            default       -> {
+                if (data.startsWith("купить ")) {
+                    try {
+                        int bookId = Integer.parseInt(data.substring(6).trim());
+                        response.buyBook(chatId, TG, bookId);
+                    } catch (NumberFormatException e) {
+                        response.sendMsg(chatId, "Неверный формат команды. Используйте: купить [номер книги]", TG);
+                    }
+                } else if ("awaiting_book_id".equals(response.getStatus(chatId)) || "awaiting_quantity".equals(response.getStatus(chatId))) {
+                    response.addToCartFlow(chatId, TG, data.trim());
+                } else {
+                    response.unknown(chatId, data, TG);
+                }
+            }
         }
     }
 
@@ -58,11 +71,34 @@ public class tgUpdateHandler {
         Long chatId = cq.getMessage().getChatId();
 
         switch (data) {
-            case "option1"      -> response.option1Callback(chatId, TG);
-            case "option2"      -> response.option2Callback(chatId, TG);
-            case "requestLogin" -> response.requestLogin(chatId, TG);
-            case "unlogging"    -> response.unlogging(chatId, TG);
-            default              -> response.unknown(chatId, data, TG);
+            case "opt1"      -> response.option1Callback(chatId, TG);
+            case "opt2"      -> response.option2Callback(chatId, TG);
+            case "logout"    -> response.unlogging(chatId, TG);
+            case "list_books"   -> response.listBooks(chatId, TG);
+            case "cart"         -> response.showCart(chatId, TG);
+            case "purchases"    -> response.showPurchases(chatId, TG);
+            case "add_to_cart"  -> {
+                response.sendMsg(chatId,"Введите ID книги для добавления в корзину:", TG);
+                response.setStatus(chatId, "awaiting_book_id");
+            }
+            case "purchase_cart"-> response.purchaseCart(chatId, TG);
+            case "clear_cart"   -> response.clearCart(chatId, TG);
+            case "sign_up"      -> response.requestLogin(chatId, TG);
+            case "back"         -> response.startCommand(chatId, TG);
+            default              -> {
+                if (data.startsWith("купить ")) {
+                    try {
+                        int bookId = Integer.parseInt(data.substring(6).trim());
+                        response.buyBook(chatId, TG, bookId);
+                    } catch (NumberFormatException e) {
+                        response.sendMsg(chatId, "Неверный формат команды. Используйте: купить [номер книги]", TG);
+                    }
+                } else if ("awaiting_book_id".equals(response.getStatus(chatId)) || "awaiting_quantity".equals(response.getStatus(chatId))) {
+                    response.addToCartFlow(chatId, TG, data.trim());
+                } else {
+                    response.unknown(chatId, data, TG);
+                }
+            }
         }
     }
 }

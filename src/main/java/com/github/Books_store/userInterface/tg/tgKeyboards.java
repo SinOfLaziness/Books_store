@@ -19,12 +19,17 @@ public class tgKeyboards {
         final List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         final List<InlineKeyboardButton> row1 = new ArrayList<>();
         final List<InlineKeyboardButton> row2 = new ArrayList<>();
+        final List<InlineKeyboardButton> row3 = new ArrayList<>();
 
-        row1.add(createButton("Опция 1", "option1"));
-        row1.add(createButton("Опция 2", "option2"));
-        row2.add(createButton("Выйти из аккаунта", "unlogging"));
+        row1.add(createButton("Опция 1", "opt1"));
+        row1.add(createButton("Опция 2", "opt2"));
+        row2.add(createButton("Список книг", "list_books"));
+        row2.add(createButton("Корзина", "cart"));
+        row3.add(createButton("Покупки", "purchases"));
+        row3.add(createButton("Выйти из аккаунта", "logout"));
         rows.add(row1);
         rows.add(row2);
+        rows.add(row3);
 
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
@@ -35,8 +40,35 @@ public class tgKeyboards {
         final List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         final List<InlineKeyboardButton> row = new ArrayList<>();
 
-        row.add(createButton("Зарегистрироваться","requestLogin"));
+        row.add(createButton("Зарегистрироваться","sign_up"));
         rows.add(row);
+
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
+    }
+
+    public InlineKeyboardMarkup createBookListKeyboard() {
+        final InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        final List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        final List<InlineKeyboardButton> row1 = new ArrayList<>();
+
+        row1.add(createButton("Добавить в корзину", "add_to_cart"));
+        row1.add(createButton("Назад", "back"));
+        rows.add(row1);
+
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
+    }
+
+    public InlineKeyboardMarkup createCartKeyboard() {
+        final InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        final List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        final List<InlineKeyboardButton> row1 = new ArrayList<>();
+
+        row1.add(createButton("Купить всю корзину", "purchase_cart"));
+        row1.add(createButton("Очистить корзину", "clear_cart"));
+        row1.add(createButton("Назад", "back"));
+        rows.add(row1);
 
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
