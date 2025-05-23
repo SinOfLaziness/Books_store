@@ -3,55 +3,102 @@ package com.github.Books_store.userInterface.tg;
 import static com.github.Books_store.userInterface.templatesMessage.*;
 
 import com.github.Books_store.model.response;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import java.sql.SQLException;
 
-// Здесь происходит обработка взаимодействия пользователя с ботом
-// HandleTextMessage обрабатывает текстовые сообщения,
-// HandleCallbackQuery обрабатывает нажатия на кнопки
-// Функции, вызываемые при обработке, хранятся в TGResponse
-// Вызываются они через response.
-
+@Component
 public class tgUpdateHandler {
 
-    private final response Response;
+    private final response response;
+    private static final String TG = "tg";
 
-    public tgUpdateHandler(tgBot telegramBot) {
-        Response = new response(telegramBot);
+    @Autowired
+    public tgUpdateHandler(response response) {
+        this.response = response;
     }
 
-    public void handleUpdate(Update update) throws TelegramApiException, SQLException {
-        if (update.hasMessage()) {
+    /**
+     * Основной метод обработки апдейтов бота
+     */
+    public void handleUpdate(Update update) throws Exception {
+        if (update.hasMessage() && update.getMessage().hasText()) {
             handleTextMessage(update);
         } else if (update.hasCallbackQuery()) {
             handleCallbackQuery(update);
         }
     }
 
-    private void handleTextMessage(Update update) throws TelegramApiException, SQLException {
-        String text = update.getMessage().getText();
+    private void handleTextMessage(Update update) throws Exception {
+        String data = update.getMessage().getText().toLowerCase();
         Long chatId = update.getMessage().getChatId();
 
-        switch (text.toLowerCase()) {
-            case "/start" ->    Response.startCommand(chatId, TG);
-            case "/help" ->     Response.help(chatId, TG);
-            default ->          Response.unknown(chatId, text, TG);
+        // Обработка состояний регистрации
+        String status = response.getStatus(chatId);
+        if ("login".equals(status)) {
+            response.processLoginInput(chatId, TG, data);
+            return;
+        } else if ("password".equals(status)) {
+            response.processPasswordInput(chatId, TG, data);
+            return;
+        }
+
+        // Обычные команды
+        switch (data) {
+            case "/start" -> response.startCommand(chatId, TG);
+            case "/help"  -> response.help(chatId, TG);
+            default       -> {
+                if (data.startsWith("купить ")) {
+                    try {
+                        int bookId = Integer.parseInt(data.substring(6).trim());
+                        response.buyBook(chatId, TG, bookId);
+                    } catch (NumberFormatException e) {
+                        response.sendMsg(chatId, "Неверный формат команды. Используйте: купить [номер книги]", TG);
+                    }
+                } else if ("awaiting_book_id".equals(response.getStatus(chatId)) || "awaiting_quantity".equals(response.getStatus(chatId))) {
+                    response.addToCartFlow(chatId, TG, data.trim());
+                } else {
+                    response.unknown(chatId, data, TG);
+                }
+            }
         }
     }
 
-    private void handleCallbackQuery(Update update) throws TelegramApiException, SQLException {
-        CallbackQuery callbackQuery = update.getCallbackQuery();
-        String data = callbackQuery.getData();
-        Long chatId = callbackQuery.getMessage().getChatId();
+    private void handleCallbackQuery(Update update) throws Exception {
+        CallbackQuery cq = update.getCallbackQuery();
+        String data = cq.getData();
+        Long chatId = cq.getMessage().getChatId();
 
         switch (data) {
-            case "option1" ->       Response.option1Callback(chatId, TG);
-            case "option2" ->       Response.option2Callback(chatId, TG);
-            case "requestLogin" ->  Response.requestLogin(chatId, TG);
-            case "unlogging" ->     Response.unlogging(chatId, TG);
-            default ->              Response.unknown(chatId, data, TG);
+            case "opt1"      -> response.option1Callback(chatId, TG);
+            case "opt2"      -> response.option2Callback(chatId, TG);
+            case "logout"    -> response.unlogging(chatId, TG);
+            case "list_books"   -> response.listBooks(chatId, TG);
+            case "cart"         -> response.showCart(chatId, TG);
+            case "purchases"    -> response.showPurchases(chatId, TG);
+            case "add_to_cart"  -> {
+                response.sendMsg(chatId,"Введите ID книги для добавления в корзину:", TG);
+                response.setStatus(chatId, "awaiting_book_id");
+            }
+            case "purchase_cart"-> response.purchaseCart(chatId, TG);
+            case "clear_cart"   -> response.clearCart(chatId, TG);
+            case "sign_up"      -> response.requestLogin(chatId, TG);
+            case "back"         -> response.startCommand(chatId, TG);
+            default              -> {
+                if (data.startsWith("купить ")) {
+                    try {
+                        int bookId = Integer.parseInt(data.substring(6).trim());
+                        response.buyBook(chatId, TG, bookId);
+                    } catch (NumberFormatException e) {
+                        response.sendMsg(chatId, "Неверный формат команды. Используйте: купить [номер книги]", TG);
+                    }
+                } else if ("awaiting_book_id".equals(response.getStatus(chatId)) || "awaiting_quantity".equals(response.getStatus(chatId))) {
+                    response.addToCartFlow(chatId, TG, data.trim());
+                } else {
+                    response.unknown(chatId, data, TG);
+                }
+            }
         }
     }
 }

@@ -1,20 +1,22 @@
 package com.github.Books_store.userInterface.tg;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import static com.github.Books_store.hiddenConstants.BOT_TOKEN;
 
-import java.sql.SQLException;
-
-// Запуск телеграм бота
-
+@Component
 public class tgBot extends TelegramLongPollingBot {
-    private final tgUpdateHandler TGupdateHandler;
 
-    public tgBot() {
-        this.TGupdateHandler = new tgUpdateHandler(this);
+    private final tgUpdateHandler tgUpdateHandler;
+
+    // Внедряем tgUpdateHandler через конструктор
+    @Autowired
+    public tgBot(tgUpdateHandler tgUpdateHandler) {
+        this.tgUpdateHandler = tgUpdateHandler;
     }
+
     @Override
     public String getBotUsername() {
         return "B00ks_St0re_bot";
@@ -28,9 +30,9 @@ public class tgBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         try {
-            TGupdateHandler.handleUpdate(update);
-        } catch (SQLException | TelegramApiException e) {
-            throw new RuntimeException(e);
+            tgUpdateHandler.handleUpdate(update);
+        } catch (Exception e) {
+            e.printStackTrace();  // Логируем ошибку, а не кидаем RuntimeException
         }
     }
 }
