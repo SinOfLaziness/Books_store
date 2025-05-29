@@ -138,6 +138,21 @@ public class databaseTools {
         }
     }
 
+    public void linkSocialAccount(Long sourceUserId, String sourceSocNet,
+                                  Long targetUserId, String targetSocNet) throws SQLException {
+        String sourceCol = sourceSocNet.equals("tg") ? constantDB.TG_ID : constantDB.VK_ID;
+        String targetCol = targetSocNet.equals("tg") ? constantDB.TG_ID : constantDB.VK_ID;
+        String sql = String.format(
+                "UPDATE %s SET %s = ? WHERE %s = ?",
+                constantDB.USERS_TABLE, targetCol, sourceCol
+        );
+        try (PreparedStatement ps = db.prepareStatement(sql)) {
+            ps.setLong(1, targetUserId);
+            ps.setLong(2, sourceUserId);
+            ps.executeUpdate();
+        }
+    }
+
 
     // Получить список товаров в корзине пользователя
     public List<CartItem> getUserCart(String login) throws SQLException {

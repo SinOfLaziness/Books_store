@@ -22,6 +22,11 @@ public class vkUpdateHandler {
         String payload = msg.getPayload();
 
         String status = resp.getStatus(peerId);
+        if ("awaiting_code".equals(status)) {
+            resp.loginByCode(peerId, VK, msg.getText().trim());
+            resp.setStatus(peerId, "main_menu");
+            return;
+        }
         if ("login".equals(status)) {
             resp.processLoginInput(peerId, VK, msg.getText().trim());
             return;
@@ -72,6 +77,11 @@ public class vkUpdateHandler {
             case "выйти из аккаунта", "logout" -> resp.unlogging(peerId, VK);
 
             case "покупки", "purchases" -> resp.showPurchases(peerId, VK);
+            case "get_code", "получить код" ->
+                    resp.requestOneTimeCode(peerId, VK);
+
+            case "login_by_code", "войти по коду" ->
+                    resp.promptOneTimeCode(peerId, VK);
 
             default -> {
                 if (command.startsWith("купить ")) {
