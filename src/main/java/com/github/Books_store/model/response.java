@@ -66,6 +66,7 @@ public class response {
 
     // Шаг 3: принять код и связать аккаунты
     public void loginByCode(Long userId, String socNet, String code) throws Exception {
+        code = code.trim().toUpperCase();
         var opt = codeService.consume(code);
         if (opt.isPresent()) {
             var rec = opt.get();
