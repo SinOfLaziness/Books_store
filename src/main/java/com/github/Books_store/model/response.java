@@ -5,6 +5,7 @@ import com.github.Books_store.accessLayer.databaseTools;
 import com.github.Books_store.model.entities.Book;
 import com.github.Books_store.model.entities.CartItem;
 import com.github.Books_store.model.entities.Purchase;
+import com.github.Books_store.service.OneTimeCodeService;
 import com.github.Books_store.userInterface.tg.tgBot;
 import com.github.Books_store.userInterface.tg.tgTools;
 import com.github.Books_store.userInterface.tg.tgKeyboards;
@@ -33,9 +34,11 @@ public class response {
     private final databaseTools dbTools;
     private final HashMap<Long, String> statusTable ;
     private final HashMap<Long, ArrayList<String>> authTable;
+    private final OneTimeCodeService codeService;
 
     @Autowired
-    public response(@Lazy tgBot telegramBot, @Lazy vkBot vkBot) {
+    public response(@Lazy tgBot telegramBot, @Lazy vkBot vkBot, OneTimeCodeService codeService) {
+        this.codeService = codeService;
         this.TGTools = new tgTools(telegramBot);
         this.VKTools = new vkTools();
         this.TGKeyboards = new tgKeyboards();
@@ -48,7 +51,34 @@ public class response {
         this.statusTable = new HashMap<>();
         this.authTable = new HashMap<>();
     }
+    // Шаг 1: сгенерировать и отправить код
+    public void requestOneTimeCode(Long userId, String socNet) throws Exception {
+        String code = codeService.generate(userId, socNet);
+        sendMsg(userId, "Ваш одноразовый код: " + code +
+                "\nДействует 5 минут.", socNet);
+    }
 
+    // Шаг 2: предложить ввести код
+    public void promptOneTimeCode(Long userId, String socNet) throws Exception {
+        sendMsg(userId, "Введите одноразовый код:", socNet);
+        setStatus(userId, "awaiting_code");
+    }
+
+    // Шаг 3: принять код и связать аккаунты
+    public void loginByCode(Long userId, String socNet, String code) throws Exception {
+        var opt = codeService.consume(code);
+        if (opt.isPresent()) {
+            var rec = opt.get();
+            dbTools.linkSocialAccount(
+                    rec.userId, rec.socNet,
+                    userId, socNet
+            );
+            sendMsg(userId, "Вход по коду успешен!", socNet);
+            sendKeyboard(userId, HELLO, socNet, true);
+        } else {
+            sendMsg(userId, "Неверный или просроченный код.", socNet);
+        }
+    }
     // Метод для получения логина по userId
     public String getLogin(Long userId, String socNet) throws SQLException {
         return dbTools.getLoginByUserId(userId, socNet);

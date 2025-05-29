@@ -20,6 +20,7 @@ public class tgKeyboards {
         final List<InlineKeyboardButton> row1 = new ArrayList<>();
         final List<InlineKeyboardButton> row2 = new ArrayList<>();
         final List<InlineKeyboardButton> row3 = new ArrayList<>();
+        final List<InlineKeyboardButton> row4 = new ArrayList<>();
 
         row1.add(createButton("Опция 1", "opt1"));
         row1.add(createButton("Опция 2", "opt2"));
@@ -27,6 +28,9 @@ public class tgKeyboards {
         row2.add(createButton("Корзина", "cart"));
         row3.add(createButton("Покупки", "purchases"));
         row3.add(createButton("Выйти из аккаунта", "logout"));
+
+        row4.add(createButton("Получить код",      "get_code"));
+        rows.add(row4);
         rows.add(row1);
         rows.add(row2);
         rows.add(row3);
@@ -36,16 +40,18 @@ public class tgKeyboards {
     }
 
     public InlineKeyboardMarkup createSignKeyboard() {
-        final InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-        final List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        final List<InlineKeyboardButton> row = new ArrayList<>();
-
-        row.add(createButton("Зарегистрироваться","sign_up"));
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        // одна строка с двумя кнопками
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        row.add(createButton("Зарегистрироваться", "sign_up"));
+        row.add(createButton("Войти по коду",    "login_by_code"));
         rows.add(row);
 
-        inlineKeyboardMarkup.setKeyboard(rows);
-        return inlineKeyboardMarkup;
+        markup.setKeyboard(rows);
+        return markup;
     }
+
 
     public InlineKeyboardMarkup createBookListKeyboard() {
         final InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();

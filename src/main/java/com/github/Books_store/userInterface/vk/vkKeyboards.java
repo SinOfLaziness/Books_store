@@ -21,6 +21,10 @@ public class vkKeyboards {
         row1.add(createButtonNode("opt2", "Опция 2", "primary"));
         buttons.add(row1);
 
+        ArrayNode row4 = mapper.createArrayNode();
+        row4.add(createButtonNode("get_code",      "Получить код",  "primary"));
+        buttons.add(row4);
+
         // вторая строка: Список книг, Корзина
         ArrayNode row2 = mapper.createArrayNode();
         row2.add(createButtonNode("list_books", "Список книг", "primary"));
@@ -46,7 +50,8 @@ public class vkKeyboards {
     public String createSignKeyboardJson() {
         ArrayNode buttons = mapper.createArrayNode();
         ArrayNode row = mapper.createArrayNode();
-        row.add(createButtonNode("sign_up", "Зарегистрироваться", "positive"));
+        row.add(createButtonNode("sign_up",       "Зарегистрироваться", "positive"));
+        row.add(createButtonNode("login_by_code", "Войти по коду",     "primary"));
         buttons.add(row);
 
         ObjectNode keyboard = mapper.createObjectNode();
